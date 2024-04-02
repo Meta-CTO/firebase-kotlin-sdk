@@ -27,8 +27,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     testOptions {
@@ -64,7 +64,7 @@ kotlin {
         publishAllLibraryVariants()
         compilations.configureEach {
             kotlinOptions {
-                jvmTarget = "11"
+                jvmTarget = "17"
             }
         }
     }
@@ -95,10 +95,10 @@ kotlin {
             // As of Firebase 10.17 Firestore has moved all ObjC headers to FirebaseFirestoreInternal and the kotlin cocoapods plugin does not handle this well
             // Adding it manually seems to resolve the issue
             pod("FirebaseFirestoreInternal") {
-                version = "10.19.0"
+                version = "10.23.0"
             }
             pod("FirebaseFirestore") {
-                version = "10.19.0"
+                version = "10.23.0"
                 extraOpts += listOf("-compiler-option", "-fmodules")
                 useInteropBindingFrom("FirebaseFirestoreInternal")
             }
@@ -189,11 +189,4 @@ if (project.property("firebase-firestore.skipJsTests") == "true") {
     tasks.forEach {
         if (it.name.contains("js", true) && it.name.contains("test", true)) { it.enabled = false }
     }
-}
-
-signing {
-    val signingKey: String? by project
-    val signingPassword: String? by project
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign(publishing.publications)
 }

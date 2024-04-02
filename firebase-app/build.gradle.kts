@@ -26,8 +26,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     testOptions {
@@ -57,12 +57,12 @@ kotlin {
 
     @Suppress("OPT_IN_USAGE")
     androidTarget {
-        instrumentedTestVariant.sourceSetTree.set(KotlinSourceSetTree.test)
+//        instrumentedTestVariant.sourceSetTree.set(KotlinSourceSetTree.test)
         unitTestVariant.sourceSetTree.set(KotlinSourceSetTree.test)
         publishAllLibraryVariants()
         compilations.configureEach {
             kotlinOptions {
-                jvmTarget = "11"
+                jvmTarget = "17"
             }
         }
     }
@@ -81,13 +81,14 @@ kotlin {
         iosSimulatorArm64()
 
         cocoapods {
-            ios.deploymentTarget = "10.0"
+            ios.deploymentTarget = "12.0"
             framework {
                 baseName = "FirebaseApp"
             }
             noPodspec()
             pod("FirebaseCore") {
-                version = "10.19.0"
+                version = "10.23.0"
+                extraOpts += listOf("-compiler-option", "-fmodules")
             }
         }
     }
@@ -164,9 +165,3 @@ if (project.property("firebase-app.skipJsTests") == "true") {
     }
 }
 
-signing {
-    val signingKey: String? by project
-    val signingPassword: String? by project
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign(publishing.publications)
-}

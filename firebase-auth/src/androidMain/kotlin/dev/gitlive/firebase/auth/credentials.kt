@@ -14,6 +14,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.concurrent.TimeUnit
+import dev.gitlive.firebase.Firebase
 
 actual open class AuthCredential(open val android: com.google.firebase.auth.AuthCredential) {
     actual val providerId: String
@@ -61,7 +62,7 @@ actual class OAuthProvider(val android: com.google.firebase.auth.OAuthProvider) 
         customParameters: Map<String, String>,
         auth: FirebaseAuth
     ) : this(
-        com.google.firebase.auth.OAuthProvider
+        OAuthProvider
             .newBuilder(provider, auth.android)
             .setScopes(scopes)
             .addCustomParameters(customParameters)
@@ -85,50 +86,28 @@ actual class PhoneAuthProvider(val createOptionsBuilder: () -> PhoneAuthOptions.
 
     actual fun credential(verificationId: String, smsCode: String): PhoneAuthCredential = PhoneAuthCredential(com.google.firebase.auth.PhoneAuthProvider.getCredential(verificationId, smsCode))
 
-    actual suspend fun verifyPhoneNumber(phoneNumber: String, verificationProvider: PhoneVerificationProvider): AuthCredential = coroutineScope {
-        val response = CompletableDeferred<Result<AuthCredential>>()
-        val callback = object :
-            PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
-
-            override fun onCodeSent(verificationId: String, forceResending: PhoneAuthProvider.ForceResendingToken) {
-                verificationProvider.codeSent {
-                    val options = createOptionsBuilder()
-                        .setPhoneNumber(phoneNumber)
-                        .setTimeout(verificationProvider.timeout, verificationProvider.unit)
-                        .setActivity(verificationProvider.activity)
-                        .setCallbacks(this)
-                        .setForceResendingToken(forceResending)
-                        .build()
-                    PhoneAuthProvider.verifyPhoneNumber(options)
-                }
-            }
-
-            override fun onCodeAutoRetrievalTimeOut(verificationId: String) {
-                launch {
-                    val code = verificationProvider.getVerificationCode()
-                    try {
-                        response.complete(Result.success(credential(verificationId, code)))
-                    } catch (e: Exception) {
-                        response.complete(Result.failure(e))
-                    }
-                }
-            }
-
-            override fun onVerificationCompleted(credential: com.google.firebase.auth.PhoneAuthCredential) {
-                response.complete(Result.success(AuthCredential(credential)))
-            }
-
+    actual suspend fun verifyPhoneNumber(phoneNumber: String, verificationProvider: PhoneVerificationProvider): PhoneVerificationMetadata = coroutineScope {
+        val response = CompletableDeferred<Result<PhoneVerificationMetadata>>()
+        val callback = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
             override fun onVerificationFailed(error: FirebaseException) {
                 response.complete(Result.failure(error))
             }
 
+            override fun onCodeSent(code: String, p1: PhoneAuthProvider.ForceResendingToken) {
+                response.complete(Result.success(PhoneVerificationMetadata(code, phoneNumber)))
+            }
+
+            override fun onVerificationCompleted(p0: com.google.firebase.auth.PhoneAuthCredential) {
+            }
         }
-        val options = createOptionsBuilder()
+
+        val options = PhoneAuthOptions.newBuilder(Firebase.auth.android)
             .setPhoneNumber(phoneNumber)
             .setTimeout(verificationProvider.timeout, verificationProvider.unit)
             .setActivity(verificationProvider.activity)
             .setCallbacks(callback)
             .build()
+
         PhoneAuthProvider.verifyPhoneNumber(options)
 
         response.await().getOrThrow()
@@ -139,7 +118,7 @@ actual interface PhoneVerificationProvider {
     val activity: Activity
     val timeout: Long
     val unit: TimeUnit
-    fun codeSent(triggerResend: (Unit) -> Unit)
+    fun onCodeSent(verificationId: String, triggerResend: () -> Unit)
     suspend fun getVerificationCode(): String
 }
 

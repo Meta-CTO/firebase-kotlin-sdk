@@ -84,8 +84,8 @@ actual class PhoneAuthProvider(val android: com.google.firebase.auth.PhoneAuthPr
 
     actual fun credential(verificationId: String, smsCode: String): PhoneAuthCredential = PhoneAuthCredential(com.google.firebase.auth.PhoneAuthProvider.getCredential(verificationId, smsCode))
 
-    actual suspend fun verifyPhoneNumber(phoneNumber: String, verificationProvider: PhoneVerificationProvider): AuthCredential = coroutineScope {
-        val response = CompletableDeferred<Result<AuthCredential>>()
+    actual suspend fun verifyPhoneNumber(phoneNumber: String, verificationProvider: PhoneVerificationProvider): PhoneVerificationMetadata = coroutineScope {
+        val response = CompletableDeferred<Result<PhoneVerificationMetadata>>()
         val callback = object :
             PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
 
@@ -99,7 +99,7 @@ actual class PhoneAuthProvider(val android: com.google.firebase.auth.PhoneAuthPr
                 launch {
                     val code = verificationProvider.getVerificationCode()
                     try {
-                        response.complete(Result.success(credential(verificationId, code)))
+                        response.complete(Result.success(PhoneVerificationMetadata(verificationId, code)))
                     } catch (e: Exception) {
                         response.complete(Result.failure(e))
                     }
@@ -107,7 +107,6 @@ actual class PhoneAuthProvider(val android: com.google.firebase.auth.PhoneAuthPr
             }
 
             override fun onVerificationCompleted(credential: com.google.firebase.auth.PhoneAuthCredential) {
-                response.complete(Result.success(AuthCredential(credential)))
             }
 
             override fun onVerificationFailed(error: FirebaseException) {
