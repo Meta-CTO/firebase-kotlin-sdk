@@ -102,6 +102,12 @@ actual class FirebaseAuth internal constructor(val js: Auth) {
     }
 
     actual fun useEmulator(host: String, port: Int) = rethrow { connectAuthEmulator(js, "http://$host:$port") }
+
+    suspend fun signInWithPopup(provider: AuthProvider) =
+        rethrow {
+            val token = signInWithPopup(js, provider).await().user.getIdToken(false).await()
+            AuthResult(signInWithCustomToken(js, token).await())
+        }
 }
 
 actual class AuthResult internal constructor(val js: JsAuthResult) {
