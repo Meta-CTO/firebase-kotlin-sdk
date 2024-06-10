@@ -87,7 +87,7 @@ kotlin {
             }
             noPodspec()
             pod("FirebaseCore") {
-                version = "10.23.0"
+                version = "10.24.0"
                 extraOpts += listOf("-compiler-option", "-fmodules")
             }
         }

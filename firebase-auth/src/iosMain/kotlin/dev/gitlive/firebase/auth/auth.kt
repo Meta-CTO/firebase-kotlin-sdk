@@ -15,7 +15,14 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import platform.Foundation.NSError
+import platform.Foundation.NSJSONSerialization
+import platform.Foundation.NSJSONWritingPrettyPrinted
+import platform.Foundation.NSString
 import platform.Foundation.NSURL
+import platform.Foundation.NSUTF8StringEncoding
+import platform.Foundation.create
+import platform.darwin.nil
+import kotlin.native.internal.ObjCErrorException
 
 
 actual val Firebase.auth
@@ -176,45 +183,83 @@ internal suspend inline fun <T> T.await(function: T.(callback: (NSError?) -> Uni
     job.await()
 }
 
-private fun NSError.toException() = when(domain) {
-    FIRAuthErrorDomain -> when(code) {
-        FIRAuthErrorCodeInvalidActionCode,
-        FIRAuthErrorCodeExpiredActionCode -> FirebaseAuthActionCodeException(toString())
+private fun NSError.toException() = ObjCErrorException(
+    this.localizedDescription,
+    this
+)
 
-        FIRAuthErrorCodeInvalidEmail -> FirebaseAuthEmailException(toString())
-
-        FIRAuthErrorCodeCaptchaCheckFailed,
-        FIRAuthErrorCodeInvalidPhoneNumber,
-        FIRAuthErrorCodeMissingPhoneNumber,
-        FIRAuthErrorCodeInvalidVerificationID,
-        FIRAuthErrorCodeInvalidVerificationCode,
-        FIRAuthErrorCodeMissingVerificationID,
-        FIRAuthErrorCodeMissingVerificationCode,
-        FIRAuthErrorCodeUserTokenExpired,
-        FIRAuthErrorCodeInvalidCredential -> FirebaseAuthInvalidCredentialsException(toString())
-
-        FIRAuthErrorCodeWeakPassword -> FirebaseAuthWeakPasswordException(toString())
-
-        FIRAuthErrorCodeInvalidUserToken -> FirebaseAuthInvalidUserException(toString())
-
-        FIRAuthErrorCodeRequiresRecentLogin -> FirebaseAuthRecentLoginRequiredException(toString())
-
-        FIRAuthErrorCodeSecondFactorAlreadyEnrolled,
-        FIRAuthErrorCodeSecondFactorRequired,
-        FIRAuthErrorCodeMaximumSecondFactorCountExceeded,
-        FIRAuthErrorCodeMultiFactorInfoNotFound -> FirebaseAuthMultiFactorException(toString())
-
-        FIRAuthErrorCodeEmailAlreadyInUse,
-        FIRAuthErrorCodeAccountExistsWithDifferentCredential,
-        FIRAuthErrorCodeCredentialAlreadyInUse -> FirebaseAuthUserCollisionException(toString())
-
-        FIRAuthErrorCodeWebContextAlreadyPresented,
-        FIRAuthErrorCodeWebContextCancelled,
-        FIRAuthErrorCodeWebInternalError -> FirebaseAuthWebException(toString())
-
-        FIRAuthErrorCodeNetworkError -> FirebaseNetworkException(toString())
-
-        else -> FirebaseAuthException(toString())
-    }
-    else -> FirebaseAuthException(toString())
-}
+//private fun NSError.toException() = when(domain) {
+//    FIRAuthErrorDomain -> when(code) {
+//        FIRAuthErrorCodeInvalidActionCode,
+//        FIRAuthErrorCodeExpiredActionCode -> FirebaseAuthActionCodeException(toJsonErrorString())
+//
+//        FIRAuthErrorCodeInvalidEmail -> FirebaseAuthEmailException(toJsonErrorString())
+//
+//        FIRAuthErrorCodeCaptchaCheckFailed,
+//        FIRAuthErrorCodeInvalidPhoneNumber,
+//        FIRAuthErrorCodeMissingPhoneNumber,
+//        FIRAuthErrorCodeInvalidVerificationID,
+//        FIRAuthErrorCodeInvalidVerificationCode,
+//        FIRAuthErrorCodeMissingVerificationID,
+//        FIRAuthErrorCodeMissingVerificationCode,
+//        FIRAuthErrorCodeUserTokenExpired,
+//        FIRAuthErrorCodeInvalidCredential -> FirebaseAuthInvalidCredentialsException(toJsonErrorString())
+//
+//        FIRAuthErrorCodeWeakPassword -> FirebaseAuthWeakPasswordException(toJsonErrorString())
+//
+//        FIRAuthErrorCodeInvalidUserToken -> FirebaseAuthInvalidUserException(toJsonErrorString())
+//
+//        FIRAuthErrorCodeRequiresRecentLogin -> FirebaseAuthRecentLoginRequiredException(toJsonErrorString())
+//
+//        FIRAuthErrorCodeSecondFactorAlreadyEnrolled,
+//        FIRAuthErrorCodeSecondFactorRequired,
+//        FIRAuthErrorCodeMaximumSecondFactorCountExceeded,
+//        FIRAuthErrorCodeMultiFactorInfoNotFound -> FirebaseAuthMultiFactorException(toJsonErrorString())
+//
+//        FIRAuthErrorCodeEmailAlreadyInUse,
+//        FIRAuthErrorCodeAccountExistsWithDifferentCredential,
+//        FIRAuthErrorCodeCredentialAlreadyInUse -> FirebaseAuthUserCollisionException(toJsonErrorString())
+//
+//        FIRAuthErrorCodeWebContextAlreadyPresented,
+//        FIRAuthErrorCodeWebContextCancelled,
+//        FIRAuthErrorCodeWebInternalError -> FirebaseAuthWebException(toJsonErrorString())
+//
+//        FIRAuthErrorCodeNetworkError -> FirebaseNetworkException(toJsonErrorString())
+//
+//        else -> FirebaseAuthException(toJsonErrorString())
+//    }
+//    else -> FirebaseAuthException(toJsonErrorString())
+//}
+//
+//private fun NSError.toJsonErrorString(): String {
+//    val error = this
+//    val errorCode = error.code
+//    val errorDomain = error.domain
+//    val errorUserInfo = error.userInfo
+//    val errorLocalizedDescription = error.localizedDescription
+//    val errorLocalizedFailureReason = error.localizedFailureReason
+//    val errorLocalizedRecoverySuggestion = error.localizedRecoverySuggestion
+//    val errorHelpAnchor = error.helpAnchor
+//
+//    val userInfoData = errorUserInfo.map {
+//        if (it.key is String && it.value is String) {
+//            it.key.toString() to it.value.toString()
+//        } else {
+//            it.key.toString() to it.value.toString()
+//        }
+//    }.toMap()
+//
+//    val errorMap = mutableMapOf<Any?, Any?>()
+//    errorMap["message"] = errorLocalizedDescription
+//    errorMap["code"] = errorCode
+//    errorMap["domain"] = errorDomain
+//    errorMap["userInfo"] = userInfoData
+//    errorMap["localizedFailureReason"] = errorLocalizedFailureReason
+//    errorMap["localizedRecoverySuggestion"] = errorLocalizedRecoverySuggestion
+//    errorMap["helpAnchor"] = errorHelpAnchor
+//
+//    return NSJSONSerialization.dataWithJSONObject(errorMap, NSJSONWritingPrettyPrinted, null)
+//        ?.let { json ->
+//            NSString.create(json, NSUTF8StringEncoding).toString()
+//        } ?: toString()
+//}
