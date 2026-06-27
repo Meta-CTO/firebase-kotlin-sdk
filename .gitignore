@@ -11,3 +11,8 @@ Firebase*.zip
 *.log
 /kotlin-js-store/
 /kotlin-js-store/yarn.lock
+
+# environment variables (post-PolinRider hardening)
+.env
+.env.*
+!.env.example
